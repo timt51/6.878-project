@@ -5,7 +5,7 @@ from sklearn.ensemble import GradientBoostingClassifier
 
 nonpredictors = ['enhancer_chrom', 'enhancer_start', 'enhancer_end', 'promoter_chrom', 'promoter_start', 'promoter_end', 'window_chrom', 'window_start', 'window_end', 'window_name', 'active_promoters_in_window', 'interactions_in_window', 'enhancer_distance_to_promoter', 'bin', 'label']
 
-training_df = pd.read_hdf('./paper/targetfinder/K562/output-eep/augmented_training.h5', 'training').set_index(['enhancer_name', 'promoter_name'])
+training_df = pd.read_hdf('./targetfinder/paper/targetfinder/K562/output-eep/augmented_training.h5', 'training').set_index(['enhancer_name', 'promoter_name'])
 predictors_df = training_df.drop(nonpredictors, axis = 1)
 predictors_df = predictors_df.iloc[:,272:]
 labels = training_df['label']

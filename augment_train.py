@@ -7,8 +7,8 @@ import pandas as pd
 from tqdm import tqdm
 
 # For K562
-training_df = pd.read_hdf('./paper/targetfinder/K562/output-eep/training.h5', 'training')
-calls_dir = '../data/piq/K562/calls/'
+training_df = pd.read_hdf('./targetfinder/paper/targetfinder/K562/output-eep/training.h5', 'training')
+calls_dir = './data/K562/calls/'
 calls_files = sorted(glob.glob(calls_dir + "*-calls.csv"))
 for calls_idx, calls_file in tqdm(enumerate(calls_files), total=len(calls_files)):
     calls_df = pd.read_csv(calls_file)
@@ -41,5 +41,5 @@ for calls_idx, calls_file in tqdm(enumerate(calls_files), total=len(calls_files)
     training_df[col_name + ' (Promoter)'] = pd.Series(promoter_calls_counts, index=training_df.index)
 
 print('Saving...')
-training_df.to_hdf('./paper/targetfinder/K562/output-eep/augmented_training.h5', key='training')
+training_df.to_hdf('.targetfinder/paper/targetfinder/K562/output-eep/augmented_training.h5', key='training')
 print('Done')
