@@ -8,9 +8,10 @@ nonpredictors = ['enhancer_chrom', 'enhancer_start', 'enhancer_end', 'promoter_c
 training_df = pd.read_hdf('./targetfinder/paper/targetfinder/K562/output-eep/augmented_training.h5', 'training').set_index(['enhancer_name', 'promoter_name'])
 predictors_df = training_df.drop(nonpredictors, axis = 1)
 predictors_df = predictors_df.iloc[:,272:]
+# predictors_df = predictors_df.iloc[:,:272]
 labels = training_df['label']
 
-estimator = GradientBoostingClassifier(n_estimators = 1000, learning_rate = 0.1, max_depth = 5, max_features = 'log2', random_state = 0)
+estimator = GradientBoostingClassifier(n_estimators = 1000, learning_rate = 0.1, max_depth = 10, max_features = 'log2', random_state = 0)
 cv = StratifiedKFold(n_splits = 10, shuffle = True, random_state = 0)
 
 scores = cross_val_score(estimator, predictors_df, labels, scoring = 'f1', cv = cv, n_jobs = -1)

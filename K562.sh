@@ -1,14 +1,14 @@
 cd ./piq-single
 
-idx=0
-N=6
-for pwmid in {1..1316}
-do
-    ((idx=idx%N)); ((idx++==0)) && wait
-    sudo Rscript ./pwmmatch.exact.r ./common.r ./pwms/jasparfix.txt $pwmid ../data/K562/motif.matches &
-done
+#idx=0
+#N=6
+#for pwmid in {1..1316}
+#do
+#    ((idx=idx%N)); ((idx++==0)) && wait
+#    sudo Rscript ./pwmmatch.exact.r ./common.r ./pwms/jasparfix.txt $pwmid ../data/K562/motif.matches &
+#done
 
-sudo Rscript ./bam2rdata.r ./common.r ../data/K562/d0.Rdata ../data/K562/ENCFF441RET.bam
+#sudo Rscript ./bam2rdata.r ./common.r ../data/K562/d0.Rdata ../data/K562/ENCFF441RET.bam
 
 open_sem(){
     mkfifo pipe-$$
@@ -34,7 +34,7 @@ task() {
 }
 
 idx=0
-N=6
+N=35
 open_sem $N
 for pwmid in {1..1316}; do
     run_with_lock task $pwmid
