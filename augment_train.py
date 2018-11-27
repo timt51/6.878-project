@@ -1,16 +1,14 @@
 import glob
 import bisect
+from multiprocessing import Pool
 
 import numpy as np
 import pandas as pd
 
 from tqdm import tqdm
 
-# For K562
-training_df = pd.read_hdf('./targetfinder/paper/targetfinder/K562/output-eep/training.h5', 'training')
-calls_dir = './data/K562/calls/'
-calls_files = sorted(glob.glob(calls_dir + "*-calls.csv"))
-for calls_idx in tqdm(range(0,calls_files,2), total=len(calls_files)//2):
+def process_calls_df(args):
+    calls_files, training_df, calls_idx = args
     calls_df = pd.read_csv(calls_files[calls_idx])
     calls2_df = pd.read_csv(calls_files[calls_idx+1])
     calls_df = pd.concat([calls_df, calls2_df])
@@ -37,8 +35,17 @@ for calls_idx in tqdm(range(0,calls_files,2), total=len(calls_files)//2):
             for idx in range(start_idx, len(chr_calls)):
                 if chr_calls[idx] < promoter_end:
                     promoter_calls_counts[training_idx] += 1
+    return (calls_idx, enhancer_calls_counts, promoter_calls_counts)
 
-    col_name = str(calls_idx)
+# For K562
+pool = Pool(6)
+training_df = pd.read_hdf('./targetfinder/paper/targetfinder/K562/output-eep/training.h5', 'training')
+calls_dir = './data/K562/calls/'
+calls_files = sorted(glob.glob(calls_dir + "*-calls.csv"))
+inputs = [(calls_files, training_df, i) for i in range(0,len(calls_files),2)]
+for ret in tqdm(pool.imap(process_calls_df, inputs), total=len(calls_files)//2):
+    calls_idx, enhancer_calls_counts, promoter_calls_counts = ret
+    col_name = str(calls_idx//2)
     training_df[col_name + ' (Enhancer)'] = pd.Series(enhancer_calls_counts, index=training_df.index)
     training_df[col_name + ' (Promoter)'] = pd.Series(promoter_calls_counts, index=training_df.index)
 
