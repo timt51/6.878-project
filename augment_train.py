@@ -10,8 +10,10 @@ from tqdm import tqdm
 training_df = pd.read_hdf('./targetfinder/paper/targetfinder/K562/output-eep/training.h5', 'training')
 calls_dir = './data/K562/calls/'
 calls_files = sorted(glob.glob(calls_dir + "*-calls.csv"))
-for calls_idx, calls_file in tqdm(enumerate(calls_files), total=len(calls_files)):
-    calls_df = pd.read_csv(calls_file)
+for calls_idx in tqdm(range(0,calls_files,2), total=len(calls_files)//2):
+    calls_df = pd.read_csv(calls_files[calls_idx])
+    calls2_df = pd.read_csv(calls_files[calls_idx+1])
+    calls_df = pd.concat([calls_df, calls2_df])
     calls_locs_df = calls_df.groupby('chr')['coord'].apply(lambda x: sorted(list(x)))
 
     enhancer_calls_counts = np.zeros((len(training_df),))
