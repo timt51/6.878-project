@@ -7,14 +7,32 @@ import pandas as pd
 
 from tqdm import tqdm
 
+import sys
+import pdb
+
+class ForkedPdb(pdb.Pdb):
+    """A Pdb subclass that may be used
+    from a forked multiprocessing child
+
+    """
+    def interaction(self, *args, **kwargs):
+        _stdin = sys.stdin
+        try:
+            sys.stdin = open('/dev/stdin')
+            pdb.Pdb.interaction(self, *args, **kwargs)
+        finally:
+            sys.stdin = _stdin
+
 def process_calls_df(args):
     fs, training_df, calls_idx = args
-#    tqdm.write("\t".join(fs))
     calls_df = pd.read_csv(fs[0])
     if len(fs) == 2:
         calls2_df = pd.read_csv(fs[1])
         calls_df = pd.concat([calls_df, calls2_df])
-    calls_locs_df = calls_df.groupby('chr')['coord'].apply(lambda x: sorted(list(x)))
+    calls_df = calls_df.sort_values(['chr', 'coord'])
+    calls_df = calls_df.groupby('chr').agg(list)
+    calls_locs_df = calls_df.loc[:,'coord']
+    calls_purities_df = calls_df.loc[:,'purity']
 
     enhancer_calls_counts = np.zeros((len(training_df),))
     promoter_calls_counts = np.zeros((len(training_df),))
@@ -25,22 +43,24 @@ def process_calls_df(args):
         promoter_start, promoter_end = row['promoter_start'], row['promoter_end']
 
         chr_calls = calls_locs_df.get(enhancer_chrom, None)
+        chr_purities = calls_purities_df.get(enhancer_chrom, None)
         if chr_calls is not None:
             start_idx = bisect.bisect(chr_calls, enhancer_start)
             for idx in range(start_idx, len(chr_calls)):
                 if chr_calls[idx] < enhancer_end:
-                    enhancer_calls_counts[training_idx] += 1
+                    enhancer_calls_counts[training_idx] = max(enhancer_calls_counts[training_idx], chr_purities[idx])
         
+        chr_calls = calls_locs_df.get(promoter_chrom, None)
+        chr_purities = calls_purities_df.get(promoter_chrom, None)
         if chr_calls is not None:
-            chr_calls = calls_locs_df.get(promoter_chrom, None)
             start_idx = bisect.bisect(chr_calls, promoter_start)
             for idx in range(start_idx, len(chr_calls)):
                 if chr_calls[idx] < promoter_end:
-                    promoter_calls_counts[training_idx] += 1
+                    promoter_calls_counts[training_idx] = max(promoter_calls_counts[training_idx], chr_purities[idx])
     return (calls_idx, enhancer_calls_counts, promoter_calls_counts)
 
 # For K562
-pool = Pool(70)
+pool = Pool(10)
 training_df = pd.read_hdf('./targetfinder/paper/targetfinder/K562/output-eep/training.h5', 'training')
 calls_dir = './data/K562/calls/'
 calls_files = sorted(glob.glob(calls_dir + "*-calls.csv"))
