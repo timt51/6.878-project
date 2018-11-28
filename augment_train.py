@@ -57,12 +57,14 @@ def process_calls_df(args):
             for idx in range(start_idx, len(chr_calls)):
                 if chr_calls[idx] < promoter_end:
                     promoter_calls_counts[training_idx] = max(promoter_calls_counts[training_idx], chr_purities[idx])
+    tqdm.write('Completing ' + str(calls_idx))
     return (calls_idx, enhancer_calls_counts, promoter_calls_counts)
 
-# For K562
-pool = Pool(10)
-training_df = pd.read_hdf('./targetfinder/paper/targetfinder/K562/output-eep/training.h5', 'training')
-calls_dir = './data/K562/calls/'
+# Main
+cell_line = sys.argv[1]
+pool = Pool(70)
+training_df = pd.read_hdf('./targetfinder/paper/targetfinder/'+cell_line+'/output-eep/training.h5', 'training')
+calls_dir = './data/'+cell_line+'/calls/'
 calls_files = sorted(glob.glob(calls_dir + "*-calls.csv"))
 inputs = []
 for name in calls_files:
@@ -78,5 +80,5 @@ for ret in tqdm(pool.imap(process_calls_df, input_args), total=len(input_args)):
     training_df[col_name + ' (Promoter)'] = pd.Series(promoter_calls_counts, index=training_df.index)
 
 print('Saving...')
-training_df.to_hdf('./targetfinder/paper/targetfinder/K562/output-eep/augmented_training.h5', key='training')
+training_df.to_hdf('./targetfinder/paper/targetfinder/'+cell_line+'/output-eep/augmented_training.h5', key='training')
 print('Done')

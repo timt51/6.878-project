@@ -1,18 +1,32 @@
+import sys
+
 import pandas as pd
 
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.ensemble import GradientBoostingClassifier
 
+mode = sys.argv[1]
+n_estimators = int(sys.argv[2])
+max_depth = int(sys.argv[3])
+cell_line = sys.argv[4]
+print("Training cell_line={} in mode {} with n_estimators={}, max_depth={}".format(cell_line, mode, n_estimators, max_depth))
+
 nonpredictors = ['enhancer_chrom', 'enhancer_start', 'enhancer_end', 'promoter_chrom', 'promoter_start', 'promoter_end', 'window_chrom', 'window_start', 'window_end', 'window_name', 'active_promoters_in_window', 'interactions_in_window', 'enhancer_distance_to_promoter', 'bin', 'label']
 
-training_df = pd.read_hdf('./targetfinder/paper/targetfinder/K562/output-eep/augmented_training.h5', 'training').set_index(['enhancer_name', 'promoter_name'])
+training_df = pd.read_hdf('./targetfinder/paper/targetfinder/'+cell_line+'/output-eep/augmented_training.h5', 'training').set_index(['enhancer_name', 'promoter_name'])
 predictors_df = training_df.drop(nonpredictors, axis = 1)
-predictors_df = predictors_df.iloc[:,272:]
-# predictors_df = predictors_df.iloc[:,:272]
+if mode == 'piq-only':
+    predictors_df = predictors_df.iloc[:,272:]
+elif mode == 'genomic-only':
+    predictors_df = predictors_df.iloc[:,:272]
+elif mode == 'genomic-piq':
+    pass
+else:
+    raise Exception("Unsupported mode")
 labels = training_df['label']
 
-estimator = GradientBoostingClassifier(n_estimators = 1000, learning_rate = 0.1, max_depth = 10, max_features = 'log2', random_state = 0)
-cv = StratifiedKFold(n_splits = 10, shuffle = True, random_state = 0)
+estimator = GradientBoostingClassifier(n_estimators = n_estimators, learning_rate = 0.1, max_depth = max_depth, max_features = 'log2', random_state = 0)
+cv = StratifiedKFold(n_splits = 10, shuffle = True, random_state = 10)
 
 scores = cross_val_score(estimator, predictors_df, labels, scoring = 'f1', cv = cv, n_jobs = -1)
 print('{:2f} {:2f}'.format(scores.mean(), scores.std()))
