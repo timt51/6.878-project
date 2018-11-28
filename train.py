@@ -16,15 +16,17 @@ print("Training cell_line={} in mode {} with n_estimators={}, max_depth={}".form
 
 nonpredictors = ['enhancer_chrom', 'enhancer_start', 'enhancer_end', 'promoter_chrom', 'promoter_start', 'promoter_end', 'window_chrom', 'window_start', 'window_end', 'window_name', 'active_promoters_in_window', 'interactions_in_window', 'enhancer_distance_to_promoter', 'bin', 'label']
 
+orig_training_df = pd.read_hdf('./targetfinder/paper/targetfinder/'+cell_line+'/output-eep/training.h5', 'training').set_index(['enhancer_name', 'promoter_name'])
 training_df = pd.read_hdf('./targetfinder/paper/targetfinder/'+cell_line+'/output-eep/augmented_training.h5', 'training').set_index(['enhancer_name', 'promoter_name'])
 assert np.sum(training_df['enhancer_chrom']==training_df['promoter_chrom']) == len(training_df)
 predictors_df = training_df.drop(nonpredictors, axis = 1)
+orig_num_cols = len(orig_training_df.columns)
 if mode == 'piq-only':
-    predictors_df = predictors_df.iloc[:,272:]
+    predictors_df = training_df.iloc[:,orig_num_cols:].drop(nonpredictors, axis = 1)
 elif mode == 'genomic-only':
-    predictors_df = predictors_df.iloc[:,:272]
+    predictors_df = training_df.iloc[:,:orig_num_cols].drop(nonpredictors, axis = 1)
 elif mode == 'genomic-piq':
-    pass
+    predictors_df = training_df.drop(nonpredictors, axis = 1)
 else:
     raise Exception("Unsupported mode")
 labels = training_df['label']
@@ -58,6 +60,7 @@ for res in pool.imap_unordered(train, inputs_):
 print("Avg perf")
 print(np.mean(f1s), np.mean(aucs))
 
+import pdb; pdb.set_trace()
 # estimator.fit(predictors_df, labels)
 # importances = pd.Series(estimator.feature_importances_, index = predictors_df.columns).sort_values(ascending = False)
 # print(importances.head(16))
