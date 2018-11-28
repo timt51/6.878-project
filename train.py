@@ -34,13 +34,24 @@ for chrom in pd.unique(training_df['enhancer_chrom']):
     training_df['enhancer_chrom'] == chrom
     idxs_per_chrom[chrom] = np.where(training_df['enhancer_chrom'] == chrom)[0]
 cv_idxs = []
-for chrom in np.random.choice(list(idxs_per_chrom.keys()),10,replace=False) :
-    train_idxs = list(set(range(len(training_df)))-set(idxs_per_chrom[chrom]))
-    test_idxs = idxs_per_chrom[chrom]
-    cv_idxs.append((train_idxs, test_idxs))
-cv = cv_idxs
+def cv():
+    for chrom in np.random.choice(list(idxs_per_chrom.keys()),2,replace=False):
+        # print('cv', chrom)
+        train_idxs = np.array(list(set(range(len(training_df)))-set(idxs_per_chrom[chrom])),dtype=int)
+        test_idxs = idxs_per_chrom[chrom].astype(int)
+        yield train_idxs, test_idxs
+#import pdb; pdb.set_trace()
 
-scores = cross_val_score(estimator, predictors_df, labels, scoring = 'f1', cv = cv, n_jobs = -1)
+chrom = 'chr1'
+train_idxs = np.array(list(set(range(len(training_df)))-set(idxs_per_chrom[chrom])),dtype=int)
+test_idxs = idxs_per_chrom[chrom].astype(int)
+x_train, y_train = predictors_df.iloc[train_idxs], labels.iloc[train_idxs]
+x_test, y_test = predictors_df.iloc[test_idxs], labels.iloc[test_idxs]
+estimator = estimator.fit(x_train,y_train)
+y_test_pred = estimator.predict(x_test)
+import pdb; pdb.set_trace()
+
+scores = cross_val_score(estimator, predictors_df, labels, scoring = 'f1', cv = cv(), n_jobs = -1)
 print('{:2f} {:2f}'.format(scores.mean(), scores.std()))
 
 estimator.fit(predictors_df, labels)
