@@ -1,10 +1,12 @@
 import sys
+from multiprocessing import Pool
 
 import numpy as np
 import pandas as pd
 
 from sklearn.model_selection import StratifiedKFold, cross_val_score
 from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.metrics import f1_score, roc_auc_score
 
 mode = sys.argv[1]
 n_estimators = int(sys.argv[2])
@@ -33,27 +35,29 @@ idxs_per_chrom = {}
 for chrom in pd.unique(training_df['enhancer_chrom']):
     training_df['enhancer_chrom'] == chrom
     idxs_per_chrom[chrom] = np.where(training_df['enhancer_chrom'] == chrom)[0]
-cv_idxs = []
-def cv():
-    for chrom in np.random.choice(list(idxs_per_chrom.keys()),2,replace=False):
-        # print('cv', chrom)
-        train_idxs = np.array(list(set(range(len(training_df)))-set(idxs_per_chrom[chrom])),dtype=int)
-        test_idxs = idxs_per_chrom[chrom].astype(int)
-        yield train_idxs, test_idxs
-#import pdb; pdb.set_trace()
 
-chrom = 'chr1'
-train_idxs = np.array(list(set(range(len(training_df)))-set(idxs_per_chrom[chrom])),dtype=int)
-test_idxs = idxs_per_chrom[chrom].astype(int)
-x_train, y_train = predictors_df.iloc[train_idxs], labels.iloc[train_idxs]
-x_test, y_test = predictors_df.iloc[test_idxs], labels.iloc[test_idxs]
-estimator = estimator.fit(x_train,y_train)
-y_test_pred = estimator.predict(x_test)
-import pdb; pdb.set_trace()
+def train(args):
+    predictors_df, labels, estimator, idxs_per_chrom, chrom = args
+    train_idxs = np.array(list(set(range(len(predictors_df)))-set(idxs_per_chrom[chrom])),dtype=int)
+    test_idxs = idxs_per_chrom[chrom].astype(int)
+    x_train, y_train = predictors_df.iloc[train_idxs], labels.iloc[train_idxs]
+    x_test, y_test = predictors_df.iloc[test_idxs], labels.iloc[test_idxs]
+    estimator = estimator.fit(x_train,y_train)
+    y_test_pred = estimator.predict(x_test)
+    y_test_probs = estimator.predict_proba(x_test)
+    return chrom, f1_score(y_test, y_test_pred), roc_auc_score(y_test, y_test_probs[:,1])
 
-scores = cross_val_score(estimator, predictors_df, labels, scoring = 'f1', cv = cv(), n_jobs = -1)
-print('{:2f} {:2f}'.format(scores.mean(), scores.std()))
+k = 10
+pool = Pool(k)
+chroms = np.random.choice(list(idxs_per_chrom.keys()),k,replace=False)
+inputs_ = [(predictors_df, labels, estimator, idxs_per_chrom, chrom) for chrom in chroms]
+f1s, aucs = [], []
+for res in pool.imap_unordered(train, inputs_):
+    chrom, f1, auc = res
+    print(chrom, f1, auc)
+print("Avg perf")
+print(np.mean(f1s), np.mean(aucs))
 
-estimator.fit(predictors_df, labels)
-importances = pd.Series(estimator.feature_importances_, index = predictors_df.columns).sort_values(ascending = False)
-print(importances.head(16))
+# estimator.fit(predictors_df, labels)
+# importances = pd.Series(estimator.feature_importances_, index = predictors_df.columns).sort_values(ascending = False)
+# print(importances.head(16))
