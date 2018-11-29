@@ -22,15 +22,15 @@ assert np.sum(training_df['enhancer_chrom']==training_df['promoter_chrom']) == l
 predictors_df = training_df.drop(nonpredictors, axis = 1)
 orig_num_cols = len(orig_training_df.columns)
 if mode == 'piq-only':
-    predictors_df = training_df.iloc[:,orig_num_cols:].drop(nonpredictors, axis = 1)
+    predictors_df = training_df.iloc[:,orig_num_cols:].drop(nonpredictors, axis = 1, errors='ignore')
 elif mode == 'genomic-only':
-    predictors_df = training_df.iloc[:,:orig_num_cols].drop(nonpredictors, axis = 1)
+    predictors_df = training_df.iloc[:,:orig_num_cols].drop(nonpredictors, axis = 1, errors='ignore')
 elif mode == 'genomic-piq':
-    predictors_df = training_df.drop(nonpredictors, axis = 1)
+    predictors_df = training_df.drop(nonpredictors, axis = 1, errors='ignore')
 else:
     raise Exception("Unsupported mode")
 labels = training_df['label']
-
+import pdb; pdb.set_trace()
 estimator = GradientBoostingClassifier(n_estimators = n_estimators, learning_rate = 0.1, max_depth = max_depth, max_features = 'log2', random_state = 0)
 np.random.seed(0)
 idxs_per_chrom = {}
