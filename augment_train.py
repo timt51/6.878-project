@@ -75,7 +75,7 @@ for name in calls_files:
 input_args = [(inputs[i], training_df, i) for i in range(len(inputs))]
 for ret in tqdm(pool.imap(process_calls_df, input_args), total=len(input_args)):
     calls_idx, enhancer_calls_counts, promoter_calls_counts = ret
-    col_name = str(calls_idx//2)
+    col_name = str(calls_idx)
     training_df[col_name + ' (Enhancer)'] = pd.Series(enhancer_calls_counts, index=training_df.index)
     training_df[col_name + ' (Promoter)'] = pd.Series(promoter_calls_counts, index=training_df.index)
 
