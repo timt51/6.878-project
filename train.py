@@ -57,7 +57,7 @@ else:
     }
 print("Proper Cross Validation")
 f1s, roc_aucs, importances = [], [], []
-for test_chrom in tqdm(chroms):
+for test_chrom in chroms:
     test_idxs = idxs_per_chrom[test_chrom].astype(int)
     X_test, y_test = predictors_df.iloc[test_idxs], labels.iloc[test_idxs]
 
