@@ -57,8 +57,9 @@ def process_calls_df(args):
             for idx in range(start_idx, len(chr_calls)):
                 if chr_calls[idx] < promoter_end:
                     promoter_calls_counts[training_idx] = max(promoter_calls_counts[training_idx], chr_purities[idx])
-    tqdm.write('Completing ' + str(calls_idx))
-    return (calls_idx, enhancer_calls_counts, promoter_calls_counts)
+    name = fs[0].split('/')[-1].split('-')[1]
+    tqdm.write('Completing ' + str(calls_idx) + ' ' + name)
+    return (calls_idx, name, enhancer_calls_counts, promoter_calls_counts)
 
 # Main
 cell_line = sys.argv[1]
@@ -74,8 +75,8 @@ for name in calls_files:
         inputs.append([name])
 input_args = [(inputs[i], training_df, i) for i in range(len(inputs))]
 for ret in tqdm(pool.imap(process_calls_df, input_args), total=len(input_args)):
-    calls_idx, enhancer_calls_counts, promoter_calls_counts = ret
-    col_name = str(calls_idx)
+    calls_idx, name, enhancer_calls_counts, promoter_calls_counts = ret
+    col_name = str(calls_idx) + ' ' + name
     training_df[col_name + ' (Enhancer)'] = pd.Series(enhancer_calls_counts, index=training_df.index)
     training_df[col_name + ' (Promoter)'] = pd.Series(promoter_calls_counts, index=training_df.index)
 
