@@ -30,7 +30,7 @@ elif mode == 'genomic-piq':
 else:
     raise Exception("Unsupported mode")
 labels = training_df['label']
-import pdb; pdb.set_trace()
+
 estimator = GradientBoostingClassifier(n_estimators = n_estimators, learning_rate = 0.1, max_depth = max_depth, max_features = 'log2', random_state = 0)
 np.random.seed(0)
 idxs_per_chrom = {}
@@ -49,6 +49,7 @@ def train(args):
     y_test_probs = estimator.predict_proba(x_test)
     return chrom, f1_score(y_test, y_test_pred), roc_auc_score(y_test, y_test_probs[:,1])
 
+print("Proper cross validation")
 k = 10
 pool = Pool(k)
 chroms = np.random.choice(list(idxs_per_chrom.keys()),k,replace=False)
@@ -56,11 +57,19 @@ inputs_ = [(predictors_df, labels, estimator, idxs_per_chrom, chrom) for chrom i
 f1s, aucs = [], []
 for res in pool.imap_unordered(train, inputs_):
     chrom, f1, auc = res
+    f1s.append(f1)
+    aucs.append(auc)
     print(chrom, f1, auc)
 print("Avg perf")
 print(np.mean(f1s), np.mean(aucs))
 
-import pdb; pdb.set_trace()
+print("Improper cross validation")
+cv = StratifiedKFold(n_splits = 10, shuffle = True, random_state = 0)
+
+scores = cross_val_score(estimator, predictors_df, labels, scoring = 'roc_auc', cv = cv, n_jobs = -1)
+print('{:2f} {:2f}'.format(scores.mean(), scores.std()))
+
+# import pdb; pdb.set_trace()
 # estimator.fit(predictors_df, labels)
 # importances = pd.Series(estimator.feature_importances_, index = predictors_df.columns).sort_values(ascending = False)
 # print(importances.head(16))
