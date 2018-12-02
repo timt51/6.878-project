@@ -63,7 +63,7 @@ if fixed_params == 'False':
                 yield train_idxs, val_idxs
 
         clf = GridSearchCV(GradientBoostingClassifier(learning_rate=0.1,max_features='log2',random_state=0), 
-                            parameters, cv=cv(test_chrom), scoring='roc_auc', iid=True, n_jobs=-1, verbose=1)
+                            parameters, cv=cv(test_chrom), scoring='roc_auc', iid=True, n_jobs=-1)
         clf.fit(predictors_df, labels)
 
         y_test_pred = clf.predict(X_test)
