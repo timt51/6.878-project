@@ -45,49 +45,62 @@ for chrom in chroms:
     idxs_per_chrom[chrom] = np.where(training_df['enhancer_chrom'] == chrom)[0]
 
 # Nested cross validation
-if fixed_params == 'True':
-    parameters = {
-        'n_estimators': [4000],
-        'max_depth': [5]
-    }
-else:
+if fixed_params == 'False':
     parameters = {
         'n_estimators': [100, 200, 500, 1000, 4000],
         'max_depth': [2, 5, 10]
     }
-print("Proper Cross Validation")
-f1s, roc_aucs, importances = [], [], []
-for test_chrom in chroms:
-    test_idxs = idxs_per_chrom[test_chrom].astype(int)
-    X_test, y_test = predictors_df.iloc[test_idxs], labels.iloc[test_idxs]
+    print("Proper Cross Validation")
+    f1s, roc_aucs, importances, best_params = [], [], [], []
+    for test_chrom in chroms:
+        test_idxs = idxs_per_chrom[test_chrom].astype(int)
+        X_test, y_test = predictors_df.iloc[test_idxs], labels.iloc[test_idxs]
 
-    def cv(test_chrom):
-        for chrom in set(chroms)-set([test_chrom]):
-            train_idxs = np.array(list(set(range(len(predictors_df)))-set(idxs_per_chrom[chrom])-set(idxs_per_chrom[test_chrom])),dtype=int)
+        def cv(test_chrom):
+            for chrom in set(chroms)-set([test_chrom]):
+                train_idxs = np.array(list(set(range(len(predictors_df)))-set(idxs_per_chrom[chrom])-set(idxs_per_chrom[test_chrom])),dtype=int)
+                val_idxs = idxs_per_chrom[chrom].astype(int)
+                yield train_idxs, val_idxs
+
+        clf = GridSearchCV(GradientBoostingClassifier(learning_rate=0.1,max_features='log2',random_state=0), 
+                            parameters, cv=cv(test_chrom), scoring='roc_auc', iid=True, n_jobs=-1, verbose=1)
+        clf.fit(predictors_df, labels)
+
+        y_test_pred = clf.predict(X_test)
+        y_test_probs = clf.predict_proba(X_test)
+        f1 = f1_score(y_test, y_test_pred)
+        roc_auc = roc_auc_score(y_test, y_test_probs[:,1])
+        f1s.append(f1)
+        roc_aucs.append(roc_auc)
+
+        this_importances = pd.Series(clf.best_estimator_.feature_importances_, index = predictors_df.columns).sort_values(ascending = False)
+        importances.append(this_importances)
+
+        best_params.append(clf.best_params_)
+    print("F1: {:.5f}, ROC_AUC: {:.5f}".format(np.mean(f1s), np.mean(roc_aucs)))
+    for idx, chrom in enumerate(chroms):
+        print("{}\t{:.5f}\t{:.5f}".format(chrom, f1s[idx], roc_aucs[idx]))
+    for idx, chrom in enumerate(chroms):
+        print(chrom)
+        print(importances[idx].head(16))
+    for idx, chrom in enumerate(chroms):
+        print(chrom)
+        print(best_params[idx])
+else:
+    print("Proper cross validation")
+    estimator = GradientBoostingClassifier(n_estimators = 4000, learning_rate = 0.1, max_depth = 5, max_features = 'log2', random_state = 0)
+    def cv():
+        for chrom in set(chroms):
+            train_idxs = np.array(list(set(range(len(predictors_df)))-set(idxs_per_chrom[chrom])),dtype=int)
             val_idxs = idxs_per_chrom[chrom].astype(int)
             yield train_idxs, val_idxs
+    scores = cross_val_score(estimator, predictors_df, labels, scoring = 'roc_auc', cv = cv(), n_jobs = -1)
+    print('{:2f} {:2f}'.format(scores.mean(), scores.std()))
 
-    clf = GridSearchCV(GradientBoostingClassifier(learning_rate=0.1,max_features='log2',random_state=0), 
-                        parameters, cv=cv(test_chrom), scoring='roc_auc', iid=True, n_jobs=-1)
-    clf.fit(predictors_df, labels)
+    estimator.fit(predictors_df, labels)
+    importances = pd.Series(estimator.feature_importances_, index = predictors_df.columns).sort_values(ascending = False)
+    print(importances.head(16))
 
-    y_test_pred = clf.predict(X_test)
-    y_test_probs = clf.predict_proba(X_test)
-    f1 = f1_score(y_test, y_test_pred)
-    roc_auc = roc_auc_score(y_test, y_test_probs[:,1])
-    f1s.append(f1)
-    roc_aucs.append(roc_auc)
-
-    this_importances = pd.Series(clf.best_estimator_.feature_importances_, index = predictors_df.columns).sort_values(ascending = False)
-    importances.append(this_importances)
-print("F1: {:.5f}, ROC_AUC: {:.5f}".format(np.mean(f1s), np.mean(roc_aucs)))
-for idx, chrom in enumerate(chroms):
-    print("{}\t{:.5f}\t{:.5f}".format(chrom, f1s[idx], roc_aucs[idx]))
-for idx, chrom in enumerate(chroms):
-    print(chrom)
-    print(importances[idx].head(16))
-
-if fixed_params:
     print("Improper cross validation")
     estimator = GradientBoostingClassifier(n_estimators = 4000, learning_rate = 0.1, max_depth = 5, max_features = 'log2', random_state = 0)
     cv = StratifiedKFold(n_splits = 10, shuffle = True, random_state = 0)
