@@ -9,9 +9,9 @@ source ~/.bashrc
 #python -W ignore train.py --mode genomic-piq --cell_line HUVEC --fixed_params True > ./data/HUVEC/results/genomic-piq-fixed.txt
 
 echo "All HUVEC"
+python -W ignore train.py --mode genomic-piq --cell_line HUVEC --fixed_params False > ./data/HUVEC/results/genomic-piq.txt
 python -W ignore train.py --mode genomic-only --cell_line HUVEC --fixed_params False > ./data/HUVEC/results/genomic-only.txt
 python -W ignore train.py --mode piq-only --cell_line HUVEC --fixed_params False > ./data/HUVEC/results/piq-only.txt
-python -W ignore train.py --mode genomic-piq --cell_line HUVEC --fixed_params False > ./data/HUVEC/results/genomic-piq.txt
 
 echo "Augment K562"
 python augment_train.py K562
