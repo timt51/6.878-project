@@ -73,7 +73,7 @@ def process_calls_df(args):
 
 # Main
 cell_line = sys.argv[1]
-pool = Pool(70)
+pool = Pool(45)
 training_df = pd.read_hdf('./targetfinder/paper/targetfinder/'+cell_line+'/output-epw/training.h5', 'training')
 calls_dir = './data/'+cell_line+'/calls/'
 calls_files = sorted(glob.glob(calls_dir + "*-calls.csv"))

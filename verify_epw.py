@@ -23,9 +23,9 @@ print("Training cell_line={} in mode {}".format(cell_line, mode))
 nonpredictors = ['enhancer_chrom', 'enhancer_start', 'enhancer_end', 'promoter_chrom', 'promoter_start', 'promoter_end', 'window_chrom', 'window_start', 'window_end', 'window_name', 'active_promoters_in_window', 'interactions_in_window', 'enhancer_distance_to_promoter', 'bin', 'label']
 
 orig_training_df = pd.read_hdf('./targetfinder/paper/targetfinder/'+cell_line+'/output-epw/training.h5', 'training').set_index(['enhancer_name', 'promoter_name'])
-if mode == 'piq-window-only' or mode == 'genomic-piq-window-only':
+if mode == 'piq-window-only' or mode == 'genomic-piq-window':
     training_df = pd.read_hdf('./targetfinder/paper/targetfinder/'+cell_line+'/output-epw/augmented_window_training.h5', 'training').set_index(['enhancer_name', 'promoter_name'])
-elif mode == 'piq-no-window-only' or mode == 'genomic-piq-no-window-only':
+elif mode == 'piq-no-window-only' or mode == 'genomic-piq-no-window':
     training_df = pd.read_hdf('./targetfinder/paper/targetfinder/'+cell_line+'/output-epw/augmented_no_window_training.h5', 'training').set_index(['enhancer_name', 'promoter_name'])
 elif mode == 'genomic-only': # doesn't matter
     training_df = pd.read_hdf('./targetfinder/paper/targetfinder/'+cell_line+'/output-epw/augmented_no_window_training.h5', 'training').set_index(['enhancer_name', 'promoter_name'])
